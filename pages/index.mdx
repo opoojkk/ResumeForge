@@ -1,0 +1,144 @@
+import Section from '../components/Section'
+import Timeline from '../components/Timeline'
+import SkillBar from '../components/SkillBar'
+import Tags from '../components/Tags'
+import Header from '../components/Header'
+import ResumeEditor from '../components/ResumeEditor'
+import resumeData from '../data/resume-data.json'
+import { getContactIcon } from '../lib/iconHelper'
+import { useState } from 'react'
+
+export const meta = {
+  title: '刘建东 - 个人简历',
+  description: 'Android 开发工程师'
+}
+
+export function ResumeContent() {
+  const [data, setData] = useState(resumeData)
+  
+  const handleExportPDF = () => {
+    window.print()
+  }
+  
+  return (
+    <div className="resume-layout">
+      <ResumeEditor initialData={data} onDataChange={setData} />
+      <div className="resume-preview">
+        <button className="btn-export-pdf-floating" onClick={handleExportPDF}>
+          📄 导出 PDF
+        </button>
+        <div className="resume-container">
+            <Header 
+              name={data.personalInfo.name}
+              title={data.personalInfo.title}
+              avatar={data.personalInfo.avatar}
+              location={data.personalInfo.location}
+              contacts={[
+                data.personalInfo.contacts.email && {
+                  icon: getContactIcon('email'),
+                  text: data.personalInfo.contacts.email,
+                  link: `mailto:${data.personalInfo.contacts.email}`
+                },
+                data.personalInfo.contacts.phone && {
+                  icon: getContactIcon('phone'),
+                  text: data.personalInfo.contacts.phone
+                },
+                data.personalInfo.contacts.github?.link && {
+                  icon: getContactIcon('github'),
+                  text: data.personalInfo.contacts.github.title || 
+                        data.personalInfo.contacts.github.link.replace(/^https?:\/\//, ''),
+                  link: data.personalInfo.contacts.github.link
+                },
+                data.personalInfo.contacts.blog?.link && {
+                  icon: getContactIcon('website'),
+                  text: data.personalInfo.contacts.blog.title || 
+                        data.personalInfo.contacts.blog.link.replace(/^https?:\/\//, ''),
+                  link: data.personalInfo.contacts.blog.link
+                }
+              ].filter(Boolean)}
+            />
+
+            <Section title="教育经历">
+              {data.education.map((edu, index) => (
+                <div key={index} className="education-item">
+                  <div className="education-header">
+                    <div className="education-info">
+                      <h3>{edu.school} · {edu.major}</h3>
+                    </div>
+                    <span className="education-time">{edu.startDate} - {edu.endDate}</span>
+                  </div>
+                  <p className="education-school">{edu.degree}</p>
+                </div>
+              ))}
+            </Section>
+
+            <Section title="工作经历">
+              <div className="work-experience">
+                {data.workExperience.map((work, index) => (
+                  <div key={index} className="company-block">
+                    <div className="company-header">
+                      <div className="company-info">
+                        <h3 className="company-name">{work.company}</h3>
+                        <span className="company-location">{work.location}</span>
+                      </div>
+                      <span className="work-time">{work.startDate} - {work.endDate}</span>
+                    </div>
+                    <p className="job-title">{work.position}</p>
+                    
+                    {work.projects.map((project, projectIndex) => (
+                      <div key={projectIndex} className="project-block">
+                        <h4 className="project-name">{project.name}</h4>
+                        {project.description && <p className="project-desc">{project.description}</p>}
+                        <ul className="project-details">
+                          {project.responsibilities.map((resp, respIndex) => (
+                            <li key={respIndex}>{resp}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </Section>
+
+            <Section title="专业技能">
+              <div className="skills-section">
+                {data.skills.map((skill, index) => (
+                  <div key={index} className="skill-group">
+                    <h4 className="skill-group-title">{skill}</h4>
+                  </div>
+                ))}
+              </div>
+            </Section>
+
+            <Section title="开源项目">
+              <div className="opensource-projects">
+                {data.openSourceProjects.map((project, index) => (
+                  <div key={index} className="project-item">
+                    <h3 className="project-title">
+                      <a href={project.link} target="_blank" rel="noopener noreferrer">{project.name}</a>
+                    </h3>
+                    <p className="project-desc">{project.description}</p>
+                  </div>
+                ))}
+              </div>
+            </Section>
+
+            <Section title="文章">
+              <div className="articles-list">
+                {data.articles.map((article, index) => (
+                  <div key={index} className="article-item">
+                    <h3 className="article-title">
+                      <a href={article.link} target="_blank" rel="noopener noreferrer">{article.title}</a>
+                    </h3>
+                  </div>
+                ))}
+              </div>
+            </Section>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+<ResumeContent />

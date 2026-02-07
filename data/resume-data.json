@@ -1,0 +1,141 @@
+{
+  "personalInfo": {
+    "name": "张三",
+    "title": "全栈开发工程师",
+    "avatar": "https://api.dicebear.com/9.x/initials/svg?seed=张三&backgroundColor=e2e8f0&textColor=64748b&fontSize=36",
+    "location": "上海",
+    "contacts": {
+      "email": "zhangsan@example.com",
+      "phone": "130****1234（同微信）",
+      "github": {
+        "title": "",
+        "link": "https://github.com/zhangsan"
+      },
+      "blog": {
+        "title": "",
+        "link": "https://zhangsan.dev/"
+      }
+    }
+  },
+  "workExperience": [
+    {
+      "company": "XX科技有限公司",
+      "location": "上海",
+      "position": "高级开发工程师",
+      "startDate": "2025/06",
+      "endDate": "至今",
+      "projects": [
+        {
+          "name": "项目架构升级",
+          "description": "",
+          "responsibilities": [
+            "主导项目从旧架构向新架构迁移",
+            "梳理并重构核心模块，提升代码可维护性"
+          ]
+        }
+      ]
+    },
+    {
+      "company": "YY教育科技公司",
+      "location": "上海",
+      "position": "开发工程师",
+      "startDate": "2023/11",
+      "endDate": "2025/04",
+      "projects": [
+        {
+          "name": "在线文档编辑器",
+          "description": "支持多种内容类型的富文本编辑应用",
+          "responsibilities": [
+            "负责编辑器核心架构设计与开发",
+            "优化渲染性能，解决大文档场景下的卡顿问题"
+          ]
+        }
+      ]
+    },
+    {
+      "company": "ZZ视觉科技有限公司",
+      "location": "上海",
+      "position": "开发工程师",
+      "startDate": "2020/11",
+      "endDate": "2023/08",
+      "projects": [
+        {
+          "name": "用户认证模块重构",
+          "description": "",
+          "responsibilities": [
+            "重构认证流程，整合多种登录方式，将登录耗时缩短50%",
+            "通过数据埋点分析用户登录行为，优化转化率"
+          ]
+        },
+        {
+          "name": "小程序开发",
+          "description": "",
+          "responsibilities": [
+            "参与小程序核心业务流程的开发与迭代"
+          ]
+        },
+        {
+          "name": "系统应用维护",
+          "description": "",
+          "responsibilities": [
+            "负责系统级应用的适配与日常维护",
+            "优化消息推送机制，提升推送到达率"
+          ]
+        },
+        {
+          "name": "启动性能优化",
+          "description": "",
+          "responsibilities": [
+            "定位并修复冷启动耗时瓶颈，启动速度提升30%"
+          ]
+        },
+        {
+          "name": "APM 监控平台建设",
+          "description": "",
+          "responsibilities": [
+            "采集应用运行时性能指标，以可视化方式展示在监控平台",
+            "建立异常上报与告警机制"
+          ]
+        }
+      ]
+    }
+  ],
+  "skills": [
+    "熟悉主流编程语言的基础及进阶用法",
+    "了解移动端 SDK 开发及系统级应用开发",
+    "熟悉常见的软件架构模式及最佳实践",
+    "熟悉主流 UI 框架及组件化开发",
+    "MVC/MVP/MVVM",
+    "依赖注入框架",
+    "熟悉常用的性能分析与调试工具",
+    "构建工具与自动化",
+    "逆向工程与安全分析",
+    "CI/CD 自动化构建与发布"
+  ],
+  "education": [
+    {
+      "degree": "学士",
+      "school": "XX师范学院",
+      "major": "计算机科学与技术",
+      "startDate": "2006/09",
+      "endDate": "2010/07"
+    }
+  ],
+  "openSourceProjects": [
+    {
+      "name": "my-app",
+      "description": "基于跨平台框架实现的第三方社交客户端",
+      "link": "https://github.com/zhangsan/my-app"
+    }
+  ],
+  "articles": [
+    {
+      "title": "深入理解页面启动与生命周期管理",
+      "link": "https://zhangsan.dev/posts/lifecycle-management/"
+    },
+    {
+      "title": "声明式 UI 编译器原理：从代码生成到运行时执行的完整流程",
+      "link": "https://zhangsan.dev/posts/declarative-ui-compiler/"
+    }
+  ]
+}

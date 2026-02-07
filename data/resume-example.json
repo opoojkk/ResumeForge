@@ -1,0 +1,90 @@
+{
+  "personalInfo": {
+    "name": "张三",
+    "title": "前端开发工程师",
+    "avatar": "/avatar.jpg",
+    "location": "上海",
+    "contacts": {
+      "email": "zhangsan@example.com",
+      "phone": "13800138000",
+      "github": {
+        "title": "GitHub主页",
+        "link": "https://github.com/zhangsan"
+      },
+      "blog": {
+        "title": "技术博客",
+        "link": "https://blog.zhangsan.com"
+      }
+    }
+  },
+  "workExperience": [
+    {
+      "company": "某科技公司",
+      "location": "上海",
+      "position": "高级前端工程师",
+      "startDate": "2022/06",
+      "endDate": "至今",
+      "projects": [
+        {
+          "name": "企业级管理系统",
+          "description": "基于 React 的大型企业管理系统",
+          "responsibilities": [
+            "负责前端架构设计和技术选型",
+            "优化页面性能，首屏加载速度提升 50%",
+            "建立组件库和最佳实践规范"
+          ]
+        }
+      ]
+    },
+    {
+      "company": "互联网公司",
+      "location": "上海",
+      "position": "前端工程师",
+      "startDate": "2020/07",
+      "endDate": "2022/05",
+      "projects": [
+        {
+          "name": "电商平台开发",
+          "description": "参与电商平台前端开发",
+          "responsibilities": [
+            "开发商品详情页和购物车功能",
+            "实现响应式设计，适配移动端"
+          ]
+        }
+      ]
+    }
+  ],
+  "skills": [
+    "熟练掌握 JavaScript/TypeScript",
+    "精通 React、Vue.js 等前端框架",
+    "熟悉 Node.js、Express 等后端技术",
+    "了解 Webpack、Vite 等构建工具",
+    "熟悉 Git 版本控制和 CI/CD 流程"
+  ],
+  "education": [
+    {
+      "degree": "本科",
+      "school": "某大学",
+      "major": "计算机科学与技术",
+      "startDate": "2016/09",
+      "endDate": "2020/06"
+    }
+  ],
+  "openSourceProjects": [
+    {
+      "name": "awesome-react-components",
+      "description": "React 组件库收集",
+      "link": "https://github.com/zhangsan/awesome-react-components"
+    }
+  ],
+  "articles": [
+    {
+      "title": "深入理解 React Hooks",
+      "link": "https://blog.zhangsan.com/react-hooks"
+    },
+    {
+      "title": "前端性能优化最佳实践",
+      "link": "https://blog.zhangsan.com/performance"
+    }
+  ]
+}

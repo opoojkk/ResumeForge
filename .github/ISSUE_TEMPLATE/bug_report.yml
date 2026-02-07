@@ -1,0 +1,70 @@
+name: 🐛 Bug 报告
+description: 报告一个问题
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你花时间填写这个 bug 报告！
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: 问题描述
+      description: 清晰简洁地描述这个 bug
+      placeholder: 告诉我们发生了什么...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤
+      description: 如何复现这个问题？
+      placeholder: |
+        1. 执行命令 '...'
+        2. 点击 '...'
+        3. 看到错误
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 你期望发生什么？
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 实际发生了什么？
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图
+      description: 如果适用，添加截图来帮助解释你的问题
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境信息
+      description: 请提供你的环境信息
+      value: |
+        - OS: [例如 Windows 11, macOS 14]
+        - Node.js 版本: [运行 `node -v`]
+        - npm 版本: [运行 `npm -v`]
+        - 项目版本: [例如 1.0.0]
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 其他信息
+      description: 添加关于这个问题的其他上下文
