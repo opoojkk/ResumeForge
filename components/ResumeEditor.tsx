@@ -3,14 +3,20 @@ import React, { useState, useRef, useEffect } from 'react'
 interface ResumeEditorProps {
   initialData: any
   onDataChange: (data: any) => void
+  onReset?: () => void
 }
 
-const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange }) => {
+const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, onReset }) => {
   const [activeSection, setActiveSection] = useState<string>('personalInfo')
   const [data, setData] = useState(initialData)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const editorContentRef = useRef<HTMLDivElement>(null)
+
+  // 当父组件传入的 initialData 变化时（如重置），同步内部 state
+  useEffect(() => {
+    setData(initialData)
+  }, [initialData])
 
   const migrateContactsData = (jsonData: any) => {
     // 如果 contacts 是数组，转换为对象格式
@@ -635,6 +641,18 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange }
           >
             📤 导出
           </button>
+          {onReset && (
+            <button
+              className="btn-reset"
+              onClick={() => {
+                if (window.confirm('确定要重置为默认数据吗？所有未导出的编辑将丢失。')) {
+                  onReset()
+                }
+              }}
+            >
+              🔄 重置
+            </button>
+          )}
         </div>
       </div>
 

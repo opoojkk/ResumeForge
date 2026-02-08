@@ -6,7 +6,7 @@ import Header from '../components/Header'
 import ResumeEditor from '../components/ResumeEditor'
 import resumeData from '../data/resume-data.json'
 import { getContactIcon } from '../lib/iconHelper'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 export const meta = {
   title: '刘建东 - 个人简历',
@@ -14,7 +14,32 @@ export const meta = {
 }
 
 export function ResumeContent() {
+  const STORAGE_KEY = 'resume-forge-data'
   const [data, setData] = useState(resumeData)
+
+  // 客户端挂载后从 localStorage 恢复数据
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem(STORAGE_KEY)
+      if (cached) setData(JSON.parse(cached))
+    } catch (e) {
+      // ignore
+    }
+  }, [])
+
+  const handleDataChange = useCallback((newData) => {
+    setData(newData)
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData))
+    } catch (e) {
+      // ignore
+    }
+  }, [])
+
+  const handleReset = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY)
+    setData(resumeData)
+  }, [])
   
   const handleExportPDF = () => {
     window.print()
@@ -22,7 +47,7 @@ export function ResumeContent() {
   
   return (
     <div className="resume-layout">
-      <ResumeEditor initialData={data} onDataChange={setData} />
+      <ResumeEditor initialData={data} onDataChange={handleDataChange} onReset={handleReset} />
       <div className="resume-preview">
         <button className="btn-export-pdf-floating" onClick={handleExportPDF}>
           📄 导出 PDF

@@ -778,7 +778,8 @@ a.contact-text:hover {
 }
 
 .btn-import,
-.btn-export {
+.btn-export,
+.btn-reset {
   padding: 8px 16px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -795,6 +796,12 @@ a.contact-text:hover {
   background: #f6f8fa;
   border-color: #57606a;
   color: #24292e;
+}
+
+.btn-reset:hover {
+  background: #fff1f0;
+  border-color: #cf222e;
+  color: #cf222e;
 }
 
 /* Tab 导航栏 - 简化设计 */
