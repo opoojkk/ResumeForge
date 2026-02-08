@@ -21,7 +21,7 @@ export default function Header({ name, title, avatar, location, locationIcon, co
       <div className="header-left">
         {avatar && (
           <div className="avatar">
-            <img src={avatar} alt={name} />
+            <img src={avatar} alt={name} referrerPolicy="no-referrer" crossOrigin="anonymous" />
           </div>
         )}
         <div className="header-info">
