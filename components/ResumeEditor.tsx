@@ -6,10 +6,49 @@ interface ResumeEditorProps {
   onReset?: () => void
 }
 
+const AVATAR_CACHE_KEY = 'resume-forge-avatar'
+
+// 压缩图片并转为 base64
+const compressImage = (file: File, maxSize = 400): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let { width, height } = img
+
+        // 等比缩放到 maxSize 以内
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = Math.round((height * maxSize) / width)
+            width = maxSize
+          } else {
+            width = Math.round((width * maxSize) / height)
+            height = maxSize
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0, width, height)
+        const base64 = canvas.toDataURL('image/jpeg', 0.85)
+        resolve(base64)
+      }
+      img.onerror = reject
+      img.src = e.target?.result as string
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, onReset }) => {
   const [activeSection, setActiveSection] = useState<string>('personalInfo')
   const [data, setData] = useState(initialData)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const editorContentRef = useRef<HTMLDivElement>(null)
 
@@ -72,6 +111,49 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
     }
     
     return jsonData
+  }
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      alert('请选择图片文件！')
+      return
+    }
+
+    // 限制原始文件大小（5MB）
+    if (file.size > 5 * 1024 * 1024) {
+      alert('图片文件过大，请选择 5MB 以内的图片！')
+      return
+    }
+
+    try {
+      const base64 = await compressImage(file)
+      // 存入单独的 localStorage key，避免 resume data 过大
+      try {
+        localStorage.setItem(AVATAR_CACHE_KEY, base64)
+      } catch (e) {
+        // ignore storage errors
+      }
+      updateData(['personalInfo', 'avatar'], base64)
+    } catch {
+      alert('图片处理失败，请重试！')
+    }
+
+    // 清空 input 值，允许重复选择同一文件
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = ''
+    }
+  }
+
+  const handleClearAvatar = () => {
+    try {
+      localStorage.removeItem(AVATAR_CACHE_KEY)
+    } catch (e) {
+      // ignore
+    }
+    updateData(['personalInfo', 'avatar'], '')
   }
 
   const handleImportJson = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,12 +289,52 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
         />
       </div>
       <div className="form-group">
-        <label>头像URL</label>
+        <label>头像</label>
+        <div className="avatar-upload-area">
+          {data.personalInfo.avatar && (
+            <div className="avatar-preview-small">
+              <img src={data.personalInfo.avatar} alt="头像预览" />
+            </div>
+          )}
+          <div className="avatar-upload-actions">
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              style={{ display: 'none' }}
+            />
+            <button
+              type="button"
+              className="btn-avatar-upload"
+              onClick={() => avatarInputRef.current?.click()}
+            >
+              📷 上传头像
+            </button>
+            {data.personalInfo.avatar && (
+              <button
+                type="button"
+                className="btn-avatar-clear"
+                onClick={handleClearAvatar}
+              >
+                清除
+              </button>
+            )}
+          </div>
+        </div>
         <input
           type="text"
-          value={data.personalInfo.avatar}
-          onChange={(e) => updateData(['personalInfo', 'avatar'], e.target.value)}
+          placeholder="或输入头像 URL"
+          value={data.personalInfo.avatar?.startsWith('data:') ? '' : (data.personalInfo.avatar || '')}
+          onChange={(e) => {
+            // 如果手动输入 URL，清除本地缓存的头像
+            try { localStorage.removeItem(AVATAR_CACHE_KEY) } catch (e) { /* ignore */ }
+            updateData(['personalInfo', 'avatar'], e.target.value)
+          }}
         />
+        {data.personalInfo.avatar?.startsWith('data:') && (
+          <span className="avatar-hint">已使用本地上传的头像</span>
+        )}
       </div>
       <div className="form-group">
         <label>位置</label>

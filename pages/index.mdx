@@ -15,13 +15,22 @@ export const meta = {
 
 export function ResumeContent() {
   const STORAGE_KEY = 'resume-forge-data'
+  const AVATAR_CACHE_KEY = 'resume-forge-avatar'
   const [data, setData] = useState(resumeData)
 
   // 客户端挂载后从 localStorage 恢复数据
   useEffect(() => {
     try {
       const cached = localStorage.getItem(STORAGE_KEY)
-      if (cached) setData(JSON.parse(cached))
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        // 恢复单独缓存的头像（base64 数据较大，单独存储）
+        const cachedAvatar = localStorage.getItem(AVATAR_CACHE_KEY)
+        if (cachedAvatar && parsed.personalInfo) {
+          parsed.personalInfo.avatar = cachedAvatar
+        }
+        setData(parsed)
+      }
     } catch (e) {
       // ignore
     }
@@ -30,7 +39,15 @@ export function ResumeContent() {
   const handleDataChange = useCallback((newData) => {
     setData(newData)
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData))
+      // 如果头像是 base64 数据，单独存储，避免 resume data JSON 过大
+      const dataToSave = JSON.parse(JSON.stringify(newData))
+      if (dataToSave.personalInfo?.avatar?.startsWith('data:')) {
+        localStorage.setItem(AVATAR_CACHE_KEY, dataToSave.personalInfo.avatar)
+        dataToSave.personalInfo.avatar = '__LOCAL_AVATAR__'
+      } else {
+        localStorage.removeItem(AVATAR_CACHE_KEY)
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave))
     } catch (e) {
       // ignore
     }
@@ -38,6 +55,7 @@ export function ResumeContent() {
 
   const handleReset = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(AVATAR_CACHE_KEY)
     setData(resumeData)
   }, [])
   
