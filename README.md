@@ -145,7 +145,7 @@ JSON 数据结构参考 [data/resume-data.json](./data/resume-data.json)，示�
 
 ## License
 
-MIT
+本项目基于 [GPL-3.0](https://github.com/opoojkk/ResumeForge?tab=GPL-3.0-1-ov-file#readme) 许可证开源。
 
 ---
 
