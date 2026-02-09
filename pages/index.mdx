@@ -77,10 +77,11 @@ export function ResumeContent() {
               avatar={data.personalInfo.avatar}
               location={data.personalInfo.location}
               contacts={[
-                data.personalInfo.contacts.email && {
-                  icon: getContactIcon('email'),
-                  text: data.personalInfo.contacts.email,
-                  link: `mailto:${data.personalInfo.contacts.email}`
+                data.personalInfo.contacts.blog?.link && {
+                  icon: getContactIcon('website'),
+                  text: data.personalInfo.contacts.blog.title || 
+                        data.personalInfo.contacts.blog.link.replace(/^https?:\/\//, ''),
+                  link: data.personalInfo.contacts.blog.link
                 },
                 data.personalInfo.contacts.phone && {
                   icon: getContactIcon('phone'),
@@ -92,11 +93,10 @@ export function ResumeContent() {
                         data.personalInfo.contacts.github.link.replace(/^https?:\/\//, ''),
                   link: data.personalInfo.contacts.github.link
                 },
-                data.personalInfo.contacts.blog?.link && {
-                  icon: getContactIcon('website'),
-                  text: data.personalInfo.contacts.blog.title || 
-                        data.personalInfo.contacts.blog.link.replace(/^https?:\/\//, ''),
-                  link: data.personalInfo.contacts.blog.link
+                data.personalInfo.contacts.email && {
+                  icon: getContactIcon('email'),
+                  text: data.personalInfo.contacts.email,
+                  link: `mailto:${data.personalInfo.contacts.email}`
                 }
               ].filter(Boolean)}
             />
