@@ -6,6 +6,8 @@ interface ResumeEditorProps {
   onReset?: () => void
 }
 
+type ViewMode = 'focused' | 'all'
+
 const AVATAR_CACHE_KEY = 'resume-forge-avatar'
 
 // 压缩图片并转为 base64
@@ -47,15 +49,48 @@ const compressImage = (file: File, maxSize = 400): Promise<string> => {
 const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, onReset }) => {
   const [activeSection, setActiveSection] = useState<string>('personalInfo')
   const [data, setData] = useState(initialData)
+  const [actionMessage, setActionMessage] = useState('')
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
+  const [viewMode, setViewMode] = useState<ViewMode>('focused')
+  const [highlightedSection, setHighlightedSection] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
+  const sectionAnchorRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const sectionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
-  const editorContentRef = useRef<HTMLDivElement>(null)
+  const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
+  const editorScrollRef = useRef<HTMLDivElement>(null)
+  const editorTabsRef = useRef<HTMLDivElement>(null)
 
   // 当父组件传入的 initialData 变化时（如重置），同步内部 state
   useEffect(() => {
     setData(initialData)
   }, [initialData])
+
+  useEffect(() => {
+    if (!actionMessage) return
+    const timeoutId = window.setTimeout(() => setActionMessage(''), 2200)
+    return () => window.clearTimeout(timeoutId)
+  }, [actionMessage])
+
+  useEffect(() => {
+    if (!highlightedSection) return
+    const timeoutId = window.setTimeout(() => setHighlightedSection(null), 1400)
+    return () => window.clearTimeout(timeoutId)
+  }, [highlightedSection])
+
+  useEffect(() => {
+    const activeTab = tabRefs.current[activeSection]
+    const tabsContainer = editorTabsRef.current
+    if (!activeTab || !tabsContainer) return
+
+    const targetLeft = activeTab.offsetLeft - (tabsContainer.clientWidth - activeTab.offsetWidth) / 2
+    const maxScrollLeft = tabsContainer.scrollWidth - tabsContainer.clientWidth
+
+    tabsContainer.scrollTo({
+      left: Math.max(0, Math.min(targetLeft, maxScrollLeft)),
+      behavior: 'smooth',
+    })
+  }, [activeSection])
 
   const migrateContactsData = (jsonData: any) => {
     // 如果 contacts 是数组，转换为对象格式
@@ -137,6 +172,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
         // ignore storage errors
       }
       updateData(['personalInfo', 'avatar'], base64)
+      setActionMessage('头像已更新')
     } catch {
       alert('图片处理失败，请重试！')
     }
@@ -154,6 +190,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
       // ignore
     }
     updateData(['personalInfo', 'avatar'], '')
+    setActionMessage('头像已清除')
   }
 
   const handleImportJson = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,6 +203,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
           jsonData = migrateContactsData(jsonData)
           setData(jsonData)
           onDataChange(jsonData)
+          setActionMessage('已导入 JSON 数据')
         } catch (error) {
           alert('JSON 文件格式错误！')
         }
@@ -183,6 +221,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
     link.download = 'resume-data.json'
     link.click()
     URL.revokeObjectURL(url)
+    setActionMessage('已导出 JSON 文件')
   }
 
   const updateData = (path: (string | number)[], value: any) => {
@@ -205,6 +244,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
     current.push(template)
     setData(newData)
     onDataChange(newData)
+    setActionMessage('已添加一项内容')
   }
 
   const removeArrayItem = (path: (string | number)[], index: number) => {
@@ -216,6 +256,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
     current.splice(index, 1)
     setData(newData)
     onDataChange(newData)
+    setActionMessage('已删除一项内容')
   }
 
   const sections = [
@@ -227,34 +268,158 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
     { id: 'articles', label: '文章', icon: '📝' },
   ]
 
-  const scrollToSection = (sectionId: string) => {
-    const sectionElement = sectionRefs.current[sectionId]
-    const containerElement = editorContentRef.current
-    
-    if (sectionElement && containerElement) {
-      const offsetTop = sectionElement.offsetTop - containerElement.offsetTop - 20
+  const activeSectionMeta = sections.find((section) => section.id === activeSection) || sections[0]
+  const totalProjects = data.workExperience.reduce((sum: number, work: any) => sum + work.projects.length, 0)
+  const quickStats = [
+    { label: '工作经历', value: data.workExperience.length },
+    { label: '项目数', value: totalProjects },
+    { label: '教育经历', value: data.education.length },
+    { label: '文章', value: data.articles.length },
+  ]
+
+  const toggleSectionCollapsed = (sectionId: string) => {
+    setCollapsedSections((prev) => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }))
+  }
+
+  const highlightSection = (sectionId: string) => {
+    setHighlightedSection(sectionId)
+  }
+
+  const openSectionIfCollapsed = (sectionId: string) => {
+    if (!collapsedSections[sectionId]) return false
+    setCollapsedSections((prev) => ({
+      ...prev,
+      [sectionId]: false
+    }))
+    return true
+  }
+
+  const scrollEditorToSection = (sectionId: string, behavior: ScrollBehavior = 'smooth') => {
+    const containerElement = editorScrollRef.current
+    const anchorElement = sectionAnchorRefs.current[sectionId]
+
+    if (!containerElement || !anchorElement) return
+
+    const containerRect = containerElement.getBoundingClientRect()
+    const anchorRect = anchorElement.getBoundingClientRect()
+    const tabsHeight = editorTabsRef.current?.offsetHeight ?? 0
+    const topOffset = tabsHeight + 18
+    const targetTop = containerElement.scrollTop + anchorRect.top - containerRect.top - topOffset
+
+    window.requestAnimationFrame(() => {
       containerElement.scrollTo({
-        top: offsetTop,
-        behavior: 'smooth'
+        top: Math.max(0, targetTop),
+        behavior,
       })
-    }
+    })
+  }
+
+  const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId)
+    const didExpand = openSectionIfCollapsed(sectionId)
+
+    if (viewMode === 'focused') {
+      window.setTimeout(() => {
+        editorScrollRef.current?.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        })
+      }, didExpand ? 120 : 0)
+      return
+    }
+
+    if (didExpand) {
+      window.setTimeout(() => {
+        scrollEditorToSection(sectionId)
+        highlightSection(sectionId)
+      }, 120)
+      return
+    }
+
+    scrollEditorToSection(sectionId)
+    highlightSection(sectionId)
+  }
+
+  const handleViewModeChange = (nextMode: ViewMode) => {
+    if (nextMode === viewMode) return
+
+    setViewMode(nextMode)
+
+    if (nextMode === 'focused') {
+      openSectionIfCollapsed(activeSection)
+      window.setTimeout(() => {
+        editorScrollRef.current?.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        })
+      }, 0)
+      return
+    }
+
+    window.setTimeout(() => scrollEditorToSection(activeSection), 0)
+  }
+
+  const renderSectionShell = (
+    sectionId: string,
+    title: string,
+    summary: string,
+    children: React.ReactNode
+  ) => {
+    const isCollapsed = viewMode === 'focused' ? false : Boolean(collapsedSections[sectionId])
+
+    return (
+      <>
+        <div
+          className="editor-section-anchor"
+          aria-hidden="true"
+          ref={(el) => { sectionAnchorRefs.current[sectionId] = el }}
+        />
+        <div
+          className={`editor-section-block ${isCollapsed ? 'collapsed' : ''} ${highlightedSection === sectionId ? 'highlighted' : ''}`}
+          ref={(el) => { sectionRefs.current[sectionId] = el }}
+        >
+          <div className="editor-section-head">
+            <div className="editor-section-head-main">
+              <h3 className="section-title">{title}</h3>
+              <span className="editor-section-summary">{summary}</span>
+            </div>
+            {viewMode === 'all' && (
+              <button
+                type="button"
+                className={`section-toggle-button ${isCollapsed ? 'collapsed' : ''}`}
+                onClick={() => toggleSectionCollapsed(sectionId)}
+              >
+                {isCollapsed ? '展开' : '收起'}
+              </button>
+            )}
+          </div>
+          {!isCollapsed && <div className="editor-section-content">{children}</div>}
+        </div>
+      </>
+    )
   }
 
   // 监听滚动，更新活动tab
   useEffect(() => {
-    const containerElement = editorContentRef.current
-    if (!containerElement) return
+    const containerElement = editorScrollRef.current
+    if (!containerElement || viewMode !== 'all') return
 
     const handleScroll = () => {
-      const scrollPosition = containerElement.scrollTop + 100 // 偏移量
+      const tabsHeight = editorTabsRef.current?.offsetHeight ?? 0
+      const scrollPosition = containerElement.scrollTop + tabsHeight + 36
 
       // 找出当前滚动位置对应的section
-      for (const section of sections) {
-        const element = sectionRefs.current[section.id]
-        if (element) {
-          const offsetTop = element.offsetTop - containerElement.offsetTop
-          const offsetBottom = offsetTop + element.offsetHeight
+      for (let index = 0; index < sections.length; index++) {
+        const section = sections[index]
+        const anchorElement = sectionAnchorRefs.current[section.id]
+        const nextAnchorElement = sectionAnchorRefs.current[sections[index + 1]?.id]
+
+        if (anchorElement) {
+          const offsetTop = anchorElement.offsetTop
+          const offsetBottom = nextAnchorElement?.offsetTop ?? Number.POSITIVE_INFINITY
 
           if (scrollPosition >= offsetTop && scrollPosition < offsetBottom) {
             setActiveSection(section.id)
@@ -266,12 +431,14 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
 
     containerElement.addEventListener('scroll', handleScroll)
     return () => containerElement.removeEventListener('scroll', handleScroll)
-  }, [sections])
+  }, [sections, viewMode])
 
   const renderPersonalInfoEditor = () => (
-    <div className="editor-section-block" ref={(el) => { sectionRefs.current['personalInfo'] = el }}>
-      <h3 className="section-title">👤 个人信息</h3>
-      <div className="editor-section-content">
+    renderSectionShell(
+      'personalInfo',
+      '👤 个人信息',
+      `${data.personalInfo.name || '未填写姓名'} · ${data.personalInfo.title || '未填写职位'}`,
+      <>
         <div className="form-group">
           <label>姓名</label>
           <input
@@ -397,14 +564,16 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
           </div>
         </div>
       </div>
-    </div>
-    </div>
+      </>
+    )
   )
 
   const renderWorkExperienceEditor = () => (
-    <div className="editor-section-block" ref={(el) => { sectionRefs.current['workExperience'] = el }}>
-      <h3 className="section-title">💼 工作经历</h3>
-      <div className="editor-section-content">
+    renderSectionShell(
+      'workExperience',
+      '💼 工作经历',
+      `${data.workExperience.length} 段经历 · ${totalProjects} 个项目`,
+      <>
       {data.workExperience.map((work: any, workIndex: number) => (
         <div key={workIndex} className="nested-item">
           <div className="nested-item-header">
@@ -531,14 +700,16 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
       >
         + 添加工作经历
       </button>
-      </div>
-    </div>
+      </>
+    )
   )
 
   const renderSkillsEditor = () => (
-    <div className="editor-section-block" ref={(el) => { sectionRefs.current['skills'] = el }}>
-      <h3 className="section-title">🛠️ 专业技能</h3>
-      <div className="editor-section-content">
+    renderSectionShell(
+      'skills',
+      '🛠️ 专业技能',
+      `${data.skills.length} 项技能`,
+      <>
         <div className="form-group">
           <label>技能列表</label>
         {data.skills.map((skill: string, index: number) => (
@@ -562,14 +733,16 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
           + 添加技能
         </button>
         </div>
-      </div>
-    </div>
+      </>
+    )
   )
 
   const renderEducationEditor = () => (
-    <div className="editor-section-block" ref={(el) => { sectionRefs.current['education'] = el }}>
-      <h3 className="section-title">🎓 教育经历</h3>
-      <div className="editor-section-content">
+    renderSectionShell(
+      'education',
+      '🎓 教育经历',
+      `${data.education.length} 段教育经历`,
+      <>
       {data.education.map((edu: any, index: number) => (
         <div key={index} className="nested-item">
           <div className="nested-item-header">
@@ -635,14 +808,16 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
       >
         + 添加教育经历
       </button>
-      </div>
-    </div>
+      </>
+    )
   )
 
   const renderOpenSourceProjectsEditor = () => (
-    <div className="editor-section-block" ref={(el) => { sectionRefs.current['openSourceProjects'] = el }}>
-      <h3 className="section-title">🔗 开源项目</h3>
-      <div className="editor-section-content">
+    renderSectionShell(
+      'openSourceProjects',
+      '🔗 开源项目',
+      `${data.openSourceProjects.length} 个开源项目`,
+      <>
       {data.openSourceProjects.map((project: any, index: number) => (
         <div key={index} className="nested-item">
           <div className="nested-item-header">
@@ -689,14 +864,16 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
       >
         + 添加开源项目
       </button>
-      </div>
-    </div>
+      </>
+    )
   )
 
   const renderArticlesEditor = () => (
-    <div className="editor-section-block" ref={(el) => { sectionRefs.current['articles'] = el }}>
-      <h3 className="section-title">📝 文章</h3>
-      <div className="editor-section-content">
+    renderSectionShell(
+      'articles',
+      '📝 文章',
+      `${data.articles.length} 篇文章`,
+      <>
       {data.articles.map((article: any, index: number) => (
         <div key={index} className="nested-item">
           <div className="nested-item-header">
@@ -735,70 +912,155 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
       >
         + 添加文章
       </button>
-      </div>
-    </div>
+      </>
+    )
   )
+
+  const sectionRenderers: Record<string, () => React.ReactNode> = {
+    personalInfo: renderPersonalInfoEditor,
+    workExperience: renderWorkExperienceEditor,
+    skills: renderSkillsEditor,
+    education: renderEducationEditor,
+    openSourceProjects: renderOpenSourceProjectsEditor,
+    articles: renderArticlesEditor,
+  }
+
+  const renderedSections = (
+    viewMode === 'focused'
+      ? [activeSection]
+      : sections.map((section) => section.id)
+  ).map((sectionId) => (
+    <React.Fragment key={sectionId}>
+      {sectionRenderers[sectionId]()}
+    </React.Fragment>
+  ))
 
   return (
     <div className="resume-editor-panel">
-      <div className="editor-header">
-        <h2>简历编辑</h2>
-        <div className="editor-actions">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            onChange={handleImportJson}
-            style={{ display: 'none' }}
-          />
-          <button
-            className="btn-import"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            📥 导入
-          </button>
-          <button
-            className="btn-export"
-            onClick={handleExportJson}
-          >
-            📤 导出
-          </button>
-          {onReset && (
+      <div className="editor-scroll-area" ref={editorScrollRef}>
+        <div className="editor-header">
+          <div className="editor-header-main">
+            <div>
+              <p className="editor-kicker">ResumeForge Workbench</p>
+              <h2>简历编辑</h2>
+            </div>
+            <div className="editor-status">
+              <span className="editor-status-pill">实时预览</span>
+              <span className="editor-status-pill muted">本地保存</span>
+            </div>
+          </div>
+          <div className="editor-actions">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportJson}
+              style={{ display: 'none' }}
+            />
             <button
-              className="btn-reset"
-              onClick={() => {
-                if (window.confirm('确定要重置为默认数据吗？所有未导出的编辑将丢失。')) {
-                  onReset()
-                }
-              }}
+              className="btn-import"
+              onClick={() => fileInputRef.current?.click()}
             >
-              🔄 重置
+              📥 导入
             </button>
+            <button
+              className="btn-export"
+              onClick={handleExportJson}
+            >
+              📤 导出
+            </button>
+            {onReset && (
+              <button
+                className="btn-reset"
+                onClick={() => {
+                  if (window.confirm('确定要重置为默认数据吗？所有未导出的编辑将丢失。')) {
+                    onReset()
+                    setActionMessage('已恢复默认数据')
+                  }
+                }}
+              >
+                🔄 重置
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="editor-workbench-strip">
+          <div className="editor-overview-card">
+            <div className="editor-overview-main">
+              <span className="editor-overview-badge">当前模块</span>
+              <h3>{activeSectionMeta.icon} {activeSectionMeta.label}</h3>
+              <p>
+                {viewMode === 'focused'
+                  ? '聚焦编辑模式下，一次只显示当前模块，适合连续填写和快速切换。'
+                  : '查看全部模式下，会显示完整表单，顶部标签会定位到对应模块。'}
+              </p>
+            </div>
+            <div className="editor-overview-side">
+              <div className="view-mode-switch" role="tablist" aria-label="模块查看模式">
+                <button
+                  type="button"
+                  className={`view-mode-button ${viewMode === 'focused' ? 'active' : ''}`}
+                  onClick={() => handleViewModeChange('focused')}
+                >
+                  聚焦编辑
+                </button>
+                <button
+                  type="button"
+                  className={`view-mode-button ${viewMode === 'all' ? 'active' : ''}`}
+                  onClick={() => handleViewModeChange('all')}
+                >
+                  查看全部
+                </button>
+              </div>
+              <div className="editor-overview-stats">
+                {quickStats.map((stat) => (
+                  <div key={stat.label} className="overview-stat-item">
+                    <span className="overview-stat-value">{stat.value}</span>
+                    <span className="overview-stat-label">{stat.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {actionMessage && (
+            <div className="editor-action-feedback" role="status">
+              <span className="editor-action-dot" />
+              <span>{actionMessage}</span>
+            </div>
           )}
+        </div>
+
+        <div className="editor-tabs" ref={editorTabsRef}>
+          {sections.map((section) => (
+            <button
+              key={section.id}
+              type="button"
+              className={`tab-button ${activeSection === section.id ? 'active' : ''}`}
+              onClick={() => scrollToSection(section.id)}
+              ref={(el) => { tabRefs.current[section.id] = el }}
+            >
+              <span className="tab-icon">{section.icon}</span>
+              <span className="tab-label">{section.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className={`editor-content ${viewMode === 'focused' ? 'focused-mode' : 'all-mode'}`}>
+          {renderedSections}
         </div>
       </div>
 
-      <div className="editor-tabs">
-        {sections.map((section) => (
-          <button
-            key={section.id}
-            className={`tab-button ${activeSection === section.id ? 'active' : ''}`}
-            onClick={() => scrollToSection(section.id)}
-          >
-            <span className="tab-icon">{section.icon}</span>
-            <span className="tab-label">{section.label}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="editor-content" ref={editorContentRef}>
-        {renderPersonalInfoEditor()}
-        {renderWorkExperienceEditor()}
-        {renderSkillsEditor()}
-        {renderEducationEditor()}
-        {renderOpenSourceProjectsEditor()}
-        {renderArticlesEditor()}
-      </div>
+      {viewMode === 'all' && (
+        <button
+          type="button"
+          className="btn-scroll-to-top"
+          onClick={() => scrollToSection('personalInfo')}
+        >
+          回到顶部
+        </button>
+      )}
     </div>
   )
 }

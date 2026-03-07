@@ -4,9 +4,10 @@ import SkillBar from '../components/SkillBar'
 import Tags from '../components/Tags'
 import Header from '../components/Header'
 import ResumeEditor from '../components/ResumeEditor'
+import ResizableLayout from '../components/ResizableLayout'
 import resumeData from '../data/resume-data.json'
 import { getContactIcon } from '../lib/iconHelper'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 export const meta = {
   title: '刘建东 - 个人简历',
@@ -17,6 +18,7 @@ export function ResumeContent() {
   const STORAGE_KEY = 'resume-forge-data'
   const AVATAR_CACHE_KEY = 'resume-forge-avatar'
   const [data, setData] = useState(resumeData)
+  const resumePrintRef = useRef(null)
 
   // 客户端挂载后从 localStorage 恢复数据
   useEffect(() => {
@@ -58,129 +60,276 @@ export function ResumeContent() {
     localStorage.removeItem(AVATAR_CACHE_KEY)
     setData(resumeData)
   }, [])
+
+  const getPrintableStyles = useCallback(() => {
+    return Array.from(document.styleSheets)
+      .map((sheet) => {
+        try {
+          return Array.from(sheet.cssRules)
+            .map((rule) => rule.cssText)
+            .join('\n')
+        } catch {
+          return ''
+        }
+      })
+      .join('\n')
+  }, [])
   
-  const handleExportPDF = () => {
-    window.print()
-  }
+  const handleExportPDF = useCallback(async () => {
+    const resumeElement = resumePrintRef.current
+
+    if (!resumeElement) {
+      return
+    }
+
+    const printFrame = document.createElement('iframe')
+    printFrame.style.position = 'fixed'
+    printFrame.style.right = '0'
+    printFrame.style.bottom = '0'
+    printFrame.style.width = '0'
+    printFrame.style.height = '0'
+    printFrame.style.border = '0'
+    printFrame.style.visibility = 'hidden'
+    document.body.appendChild(printFrame)
+
+    const frameWindow = printFrame.contentWindow
+    if (!frameWindow) {
+      printFrame.remove()
+      return
+    }
+
+    const clonedResume = resumeElement.cloneNode(true)
+    const documentTitle = data.personalInfo.name
+      ? `${data.personalInfo.name} - 简历`
+      : 'resume'
+
+    frameWindow.document.open()
+    frameWindow.document.write(`<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${documentTitle}</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        background: #ffffff;
+      }
+
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      #print-root {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0 auto;
+        padding: 0;
+        background: #ffffff;
+      }
+
+      #print-root .resume-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+      }
+
+      ${getPrintableStyles()}
+    </style>
+  </head>
+  <body>
+    <div id="print-root">${clonedResume.outerHTML}</div>
+  </body>
+</html>`)
+    frameWindow.document.close()
+
+    const waitForPrintReady = async () => {
+      const frameDocument = frameWindow.document
+
+      if (frameDocument.fonts?.ready) {
+        await frameDocument.fonts.ready
+      }
+
+      const images = Array.from(frameDocument.images)
+      await Promise.all(
+        images
+          .filter((img) => !img.complete)
+          .map((img) => new Promise((resolve) => {
+            img.addEventListener('load', () => resolve(), { once: true })
+            img.addEventListener('error', () => resolve(), { once: true })
+          }))
+      )
+
+      await new Promise((resolve) => {
+        frameWindow.requestAnimationFrame(() => {
+          frameWindow.requestAnimationFrame(resolve)
+        })
+      })
+    }
+
+    try {
+      await waitForPrintReady()
+      frameWindow.focus()
+      frameWindow.print()
+      frameWindow.onafterprint = () => {
+        printFrame.remove()
+      }
+      window.setTimeout(() => {
+        if (document.body.contains(printFrame)) {
+          printFrame.remove()
+        }
+      }, 1500)
+    } catch {
+      printFrame.remove()
+    }
+  }, [data.personalInfo.name, getPrintableStyles])
   
   return (
-    <div className="resume-layout">
-      <ResumeEditor initialData={data} onDataChange={handleDataChange} onReset={handleReset} />
-      <div className="resume-preview">
-        <button className="btn-export-pdf-floating" onClick={handleExportPDF}>
-          📄 导出 PDF
-        </button>
-        <div className="resume-container">
-            <Header 
-              name={data.personalInfo.name}
-              title={data.personalInfo.title}
-              avatar={data.personalInfo.avatar}
-              location={data.personalInfo.location}
-              contacts={[
-                data.personalInfo.contacts.blog?.link && {
-                  icon: getContactIcon('website'),
-                  text: data.personalInfo.contacts.blog.title || 
-                        data.personalInfo.contacts.blog.link.replace(/^https?:\/\//, ''),
-                  link: data.personalInfo.contacts.blog.link
-                },
-                data.personalInfo.contacts.phone && {
-                  icon: getContactIcon('phone'),
-                  text: data.personalInfo.contacts.phone
-                },
-                data.personalInfo.contacts.github?.link && {
-                  icon: getContactIcon('github'),
-                  text: data.personalInfo.contacts.github.title || 
-                        data.personalInfo.contacts.github.link.replace(/^https?:\/\//, ''),
-                  link: data.personalInfo.contacts.github.link
-                },
-                data.personalInfo.contacts.email && {
-                  icon: getContactIcon('email'),
-                  text: data.personalInfo.contacts.email,
-                  link: `mailto:${data.personalInfo.contacts.email}`
-                }
-              ].filter(Boolean)}
-            />
+    <ResizableLayout
+      editor={<ResumeEditor initialData={data} onDataChange={handleDataChange} onReset={handleReset} />}
+      preview={
+        <div className="preview-panel">
+          <div className="preview-toolbar">
+            <div className="preview-toolbar-copy">
+              <p className="preview-kicker">Live Preview</p>
+              <h3>简历预览</h3>
+              <span>导出范围固定为右侧简历预览区域</span>
+            </div>
+            <div className="preview-toolbar-actions">
+              <button className="btn-export-pdf-floating" onClick={handleExportPDF}>
+                📄 导出 PDF
+              </button>
+            </div>
+          </div>
+          <div className="resume-preview">
+            <div className="resume-container" ref={resumePrintRef}>
+              <Header 
+                name={data.personalInfo.name}
+                title={data.personalInfo.title}
+                avatar={data.personalInfo.avatar}
+                location={data.personalInfo.location}
+                contacts={[
+                  data.personalInfo.contacts.blog?.link && {
+                    icon: getContactIcon('website'),
+                    text: data.personalInfo.contacts.blog.title || 
+                          data.personalInfo.contacts.blog.link.replace(/^https?:\/\//, ''),
+                    link: data.personalInfo.contacts.blog.link
+                  },
+                  data.personalInfo.contacts.phone && {
+                    icon: getContactIcon('phone'),
+                    text: data.personalInfo.contacts.phone
+                  },
+                  data.personalInfo.contacts.github?.link && {
+                    icon: getContactIcon('github'),
+                    text: data.personalInfo.contacts.github.title || 
+                          data.personalInfo.contacts.github.link.replace(/^https?:\/\//, ''),
+                    link: data.personalInfo.contacts.github.link
+                  },
+                  data.personalInfo.contacts.email && {
+                    icon: getContactIcon('email'),
+                    text: data.personalInfo.contacts.email,
+                    link: `mailto:${data.personalInfo.contacts.email}`
+                  }
+                ].filter(Boolean)}
+              />
 
-            <Section title="教育经历">
-              {data.education.map((edu, index) => (
-                <div key={index} className="education-item">
-                  <div className="education-header">
-                    <div className="education-info">
-                      <h3>{edu.school} · {edu.major}</h3>
-                    </div>
-                    <span className="education-time">{edu.startDate} - {edu.endDate}</span>
-                  </div>
-                  <p className="education-school">{edu.degree}</p>
-                </div>
-              ))}
-            </Section>
-
-            <Section title="工作经历">
-              <div className="work-experience">
-                {data.workExperience.map((work, index) => (
-                  <div key={index} className="company-block">
-                    <div className="company-header">
-                      <div className="company-info">
-                        <h3 className="company-name">{work.company}</h3>
-                        <span className="company-location">{work.location}</span>
+              <Section title="教育经历">
+                {data.education.map((edu, index) => (
+                  <div key={index} className="education-item">
+                    <div className="education-header">
+                      <div className="education-info">
+                        <h3>{edu.school} · {edu.major}</h3>
                       </div>
-                      <span className="work-time">{work.startDate} - {work.endDate}</span>
+                      <span className="education-time">{edu.startDate} - {edu.endDate}</span>
                     </div>
-                    <p className="job-title">{work.position}</p>
+                    <p className="education-school">{edu.degree}</p>
+                  </div>
+                ))}
+              </Section>
+
+              <Section title="工作经历">
+                <div className="work-experience">
+                  {data.workExperience.map((work, index) => (
+                    <div key={index} className="company-block">
+                      <div className="company-header">
+                        <div className="company-info">
+                          <h3 className="company-name">{work.company}</h3>
+                          <span className="company-location">{work.location}</span>
+                        </div>
+                        <span className="work-time">{work.startDate} - {work.endDate}</span>
+                      </div>
+                      <p className="job-title">{work.position}</p>
                     
-                    {work.projects.map((project, projectIndex) => (
-                      <div key={projectIndex} className="project-block">
-                        <h4 className="project-name">{project.name}</h4>
-                        {project.description && <p className="project-desc">{project.description}</p>}
-                        <ul className="project-details">
-                          {project.responsibilities.map((resp, respIndex) => (
-                            <li key={respIndex}>{resp}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </Section>
+                      {work.projects.map((project, projectIndex) => (
+                        <div key={projectIndex} className="project-block">
+                          <h4 className="project-name">{project.name}</h4>
+                          {project.description && <p className="project-desc">{project.description}</p>}
+                          <ul className="project-details">
+                            {project.responsibilities.map((resp, respIndex) => (
+                              <li key={respIndex}>{resp}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </Section>
 
-            <Section title="专业技能">
-              <div className="skills-section">
-                {data.skills.map((skill, index) => (
-                  <div key={index} className="skill-group">
-                    <h4 className="skill-group-title">{skill}</h4>
-                  </div>
-                ))}
-              </div>
-            </Section>
+              <Section title="专业技能">
+                <div className="skills-section">
+                  {data.skills.map((skill, index) => (
+                    <div key={index} className="skill-group">
+                      <h4 className="skill-group-title">{skill}</h4>
+                    </div>
+                  ))}
+                </div>
+              </Section>
 
-            <Section title="开源项目">
-              <div className="opensource-projects">
-                {data.openSourceProjects.map((project, index) => (
-                  <div key={index} className="project-item">
-                    <h3 className="project-title">
-                      <a href={project.link} target="_blank" rel="noopener noreferrer">{project.name}</a>
-                    </h3>
-                    <p className="project-desc">{project.description}</p>
-                  </div>
-                ))}
-              </div>
-            </Section>
+              <Section title="开源项目">
+                <div className="opensource-projects">
+                  {data.openSourceProjects.map((project, index) => (
+                    <div key={index} className="project-item">
+                      <h3 className="project-title">
+                        <a href={project.link} target="_blank" rel="noopener noreferrer">{project.name}</a>
+                      </h3>
+                      <p className="project-desc">{project.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </Section>
 
-            <Section title="文章">
-              <div className="articles-list">
-                {data.articles.map((article, index) => (
-                  <div key={index} className="article-item">
-                    <h3 className="article-title">
-                      <a href={article.link} target="_blank" rel="noopener noreferrer">{article.title}</a>
-                    </h3>
-                  </div>
-                ))}
-              </div>
-            </Section>
+              <Section title="文章">
+                <div className="articles-list">
+                  {data.articles.map((article, index) => (
+                    <div key={index} className="article-item">
+                      <h3 className="article-title">
+                        <a href={article.link} target="_blank" rel="noopener noreferrer">{article.title}</a>
+                      </h3>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      }
+    />
   )
 }
 
