@@ -6,6 +6,7 @@ import Header from '../components/Header'
 import ResumeEditor from '../components/ResumeEditor'
 import resumeData from '../data/resume-data.json'
 import { getContactIcon } from '../lib/iconHelper'
+import { DEFAULT_TEMPLATE_ID, getTemplateById } from '../lib/templates'
 import { useState, useEffect, useCallback } from 'react'
 
 export const meta = {
@@ -18,12 +19,23 @@ export function ResumeContent() {
   const AVATAR_CACHE_KEY = 'resume-forge-avatar'
   const [data, setData] = useState(resumeData)
 
+  const ensureTemplateData = useCallback((resume) => {
+    if (!resume.templateId) {
+      return {
+        ...resume,
+        templateId: DEFAULT_TEMPLATE_ID
+      }
+    }
+
+    return resume
+  }, [])
+
   // 客户端挂载后从 localStorage 恢复数据
   useEffect(() => {
     try {
       const cached = localStorage.getItem(STORAGE_KEY)
       if (cached) {
-        const parsed = JSON.parse(cached)
+        const parsed = ensureTemplateData(JSON.parse(cached))
         // 恢复单独缓存的头像（base64 数据较大，单独存储）
         const cachedAvatar = localStorage.getItem(AVATAR_CACHE_KEY)
         if (cachedAvatar && parsed.personalInfo) {
@@ -34,13 +46,14 @@ export function ResumeContent() {
     } catch (e) {
       // ignore
     }
-  }, [])
+  }, [ensureTemplateData])
 
   const handleDataChange = useCallback((newData) => {
-    setData(newData)
+    const normalizedData = ensureTemplateData(newData)
+    setData(normalizedData)
     try {
       // 如果头像是 base64 数据，单独存储，避免 resume data JSON 过大
-      const dataToSave = JSON.parse(JSON.stringify(newData))
+      const dataToSave = JSON.parse(JSON.stringify(normalizedData))
       if (dataToSave.personalInfo?.avatar?.startsWith('data:')) {
         localStorage.setItem(AVATAR_CACHE_KEY, dataToSave.personalInfo.avatar)
         dataToSave.personalInfo.avatar = '__LOCAL_AVATAR__'
@@ -51,13 +64,15 @@ export function ResumeContent() {
     } catch (e) {
       // ignore
     }
-  }, [])
+  }, [ensureTemplateData])
 
   const handleReset = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY)
     localStorage.removeItem(AVATAR_CACHE_KEY)
-    setData(resumeData)
-  }, [])
+    setData(ensureTemplateData(resumeData))
+  }, [ensureTemplateData])
+
+  const activeTemplate = getTemplateById(data.templateId)
   
   const handleExportPDF = () => {
     window.print()
@@ -70,7 +85,7 @@ export function ResumeContent() {
         <button className="btn-export-pdf-floating" onClick={handleExportPDF}>
           📄 导出 PDF
         </button>
-        <div className="resume-container">
+        <div className="resume-container" data-template-id={activeTemplate.id} style={activeTemplate.vars}>
             <Header 
               name={data.personalInfo.name}
               title={data.personalInfo.title}

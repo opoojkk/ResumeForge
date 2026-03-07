@@ -4,11 +4,30 @@
   box-sizing: border-box;
 }
 
+:root {
+  --rf-color-body-text: #333;
+  --rf-color-body-bg: #ffffff;
+  --rf-color-panel-bg: #fafbfc;
+  --rf-color-preview-bg: #f6f8fa;
+  --rf-color-primary: #1e293b;
+  --rf-color-secondary: #64748b;
+  --rf-color-muted: #475569;
+  --rf-color-border: #e5e7eb;
+  --rf-color-accent: #0969da;
+  --rf-color-accent-hover: #0550ae;
+  --rf-color-tag-primary-bg: #dbeafe;
+  --rf-color-tag-primary-text: #1e40af;
+  --rf-color-tag-secondary-bg: #f1f5f9;
+  --rf-color-tag-secondary-text: #475569;
+  --rf-color-skill-fill-from: #2563eb;
+  --rf-color-skill-fill-to: #3b82f6;
+}
+
 body {
   font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   line-height: 1.6;
-  color: #333;
-  background: #ffffff;
+  color: var(--rf-color-body-text);
+  background: var(--rf-color-body-bg);
   margin: 0;
   padding: 0;
 }
@@ -26,18 +45,18 @@ body {
   width: 50%;
   min-width: 50%;
   height: 100vh;
-  background: #fafbfc;
+  background: var(--rf-color-panel-bg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-right: 1px solid #e1e4e8;
+  border-right: 1px solid var(--rf-color-border);
 }
 
 /* 右侧简历预览 - 50% */
 .resume-preview {
   width: 50%;
   height: 100vh;
-  background: #f6f8fa;
+  background: var(--rf-color-preview-bg);
   overflow-y: auto;
   padding: 40px 20px;
   display: flex;
@@ -52,7 +71,7 @@ body {
   top: 20px;
   right: 20px;
   padding: 10px 20px;
-  background: #0969da;
+  background: var(--rf-color-accent);
   color: white;
   border: none;
   border-radius: 6px;
@@ -68,7 +87,7 @@ body {
 }
 
 .btn-export-pdf-floating:hover {
-  background: #0550ae;
+  background: var(--rf-color-accent-hover);
   box-shadow: 0 4px 12px rgba(9, 105, 218, 0.4);
   transform: translateY(-1px);
 }
@@ -145,12 +164,12 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 0.25rem;
-  color: #1e293b;
+  color: var(--rf-color-primary);
 }
 
 .title {
   font-size: 1rem;
-  color: #64748b;
+  color: var(--rf-color-secondary);
   margin: 0;
 }
 
@@ -172,7 +191,7 @@ body {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.85rem;
-  color: #475569;
+  color: var(--rf-color-muted);
 }
 
 .contact-icon {
@@ -182,7 +201,7 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #64748b;
+  color: var(--rf-color-secondary);
 }
 
 .contact-icon svg {
@@ -192,17 +211,17 @@ body {
 }
 
 .contact-text {
-  color: #475569;
+  color: var(--rf-color-muted);
   text-decoration: none;
 }
 
 .contact-text:hover {
-  color: #475569;
+  color: var(--rf-color-muted);
 }
 
 a.contact-text {
   text-decoration: underline;
-  text-decoration-color: #475569;
+  text-decoration-color: var(--rf-color-muted);
   transition: opacity 0.2s;
 }
 
@@ -229,10 +248,10 @@ a.contact-text:hover {
 .section .section-title {
   font-size: 1.3rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--rf-color-primary);
   margin-bottom: 0.5rem;
   padding-bottom: 0.25rem;
-  border-bottom: 1px solid rgb(229, 231, 235);
+  border-bottom: 1px solid var(--rf-color-border);
   position: relative;
   display: block;
 }
@@ -514,7 +533,7 @@ a.contact-text:hover {
 
 .skill-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+  background: linear-gradient(90deg, var(--rf-color-skill-fill-from) 0%, var(--rf-color-skill-fill-to) 100%);
   transition: width 0.3s ease;
 }
 
@@ -534,13 +553,13 @@ a.contact-text:hover {
 }
 
 .tag-primary {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--rf-color-tag-primary-bg);
+  color: var(--rf-color-tag-primary-text);
 }
 
 .tag-secondary {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--rf-color-tag-secondary-bg);
+  color: var(--rf-color-tag-secondary-text);
 }
 
 /* Project */
@@ -925,6 +944,7 @@ a.contact-text:hover {
 }
 
 .form-group input,
+.form-group select,
 .form-group textarea {
   padding: 10px 12px;
   border: 1px solid #d1d5db;
@@ -937,11 +957,13 @@ a.contact-text:hover {
 }
 
 .form-group input:hover,
+.form-group select:hover,
 .form-group textarea:hover {
   border-color: #9ca3af;
 }
 
 .form-group input:focus,
+.form-group select:focus,
 .form-group textarea:focus {
   outline: none;
   border-color: #0969da;
@@ -952,6 +974,25 @@ a.contact-text:hover {
   min-height: 80px;
   resize: vertical;
   line-height: 1.5;
+}
+
+.template-description {
+  margin: 0;
+  color: #57606a;
+  font-size: 14px;
+}
+
+.template-extension-hint {
+  margin: 0;
+  color: #57606a;
+  font-size: 13px;
+}
+
+.template-extension-hint code {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f6f8fa;
+  border: 1px solid #d1d5db;
 }
 
 /* 头像上传区域 */
@@ -1293,4 +1334,3 @@ a.contact-text:hover {
     font-size: 13px;
   }
 }
-

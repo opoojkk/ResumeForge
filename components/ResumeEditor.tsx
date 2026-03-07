@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { DEFAULT_TEMPLATE_ID, resumeTemplates } from '../lib/templates'
 
 interface ResumeEditorProps {
   initialData: any
@@ -113,6 +114,14 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
     return jsonData
   }
 
+  const migrateTemplateData = (jsonData: any) => {
+    if (!jsonData.templateId) {
+      jsonData.templateId = DEFAULT_TEMPLATE_ID
+    }
+
+    return jsonData
+  }
+
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -164,6 +173,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
         try {
           let jsonData = JSON.parse(e.target?.result as string)
           jsonData = migrateContactsData(jsonData)
+          jsonData = migrateTemplateData(jsonData)
           setData(jsonData)
           onDataChange(jsonData)
         } catch (error) {
@@ -219,6 +229,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
   }
 
   const sections = [
+    { id: 'template', label: '主题模板', icon: '🎨' },
     { id: 'personalInfo', label: '个人信息', icon: '👤' },
     { id: 'workExperience', label: '工作经历', icon: '💼' },
     { id: 'skills', label: '专业技能', icon: '🛠️' },
@@ -398,6 +409,33 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
         </div>
       </div>
     </div>
+    </div>
+  )
+
+  const renderTemplateEditor = () => (
+    <div className="editor-section-block" ref={(el) => { sectionRefs.current['template'] = el }}>
+      <h3 className="section-title">🎨 主题模板</h3>
+      <div className="editor-section-content">
+        <div className="form-group">
+          <label>选择模板</label>
+          <select
+            value={data.templateId || DEFAULT_TEMPLATE_ID}
+            onChange={(e) => updateData(['templateId'], e.target.value)}
+          >
+            {resumeTemplates.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <p className="template-description">
+          {resumeTemplates.find((template) => template.id === (data.templateId || DEFAULT_TEMPLATE_ID))?.description}
+        </p>
+        <p className="template-extension-hint">
+          其他用户可在 <code>lib/templates.ts</code> 添加新模板并提交 PR，具体步骤见 <code>docs/templates.md</code>。
+        </p>
+      </div>
     </div>
   )
 
@@ -792,6 +830,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
       </div>
 
       <div className="editor-content" ref={editorContentRef}>
+        {renderTemplateEditor()}
         {renderPersonalInfoEditor()}
         {renderWorkExperienceEditor()}
         {renderSkillsEditor()}
