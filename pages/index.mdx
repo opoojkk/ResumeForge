@@ -17,7 +17,48 @@ export const meta = {
 export function ResumeContent() {
   const STORAGE_KEY = 'resume-forge-data'
   const AVATAR_CACHE_KEY = 'resume-forge-avatar'
-  const [data, setData] = useState(resumeData)
+  const normalizeResumeData = (jsonData) => {
+    const nextData = JSON.parse(JSON.stringify(jsonData ?? {}))
+
+    if (!nextData.personalInfo) {
+      nextData.personalInfo = {}
+    }
+
+    if (!nextData.exportSettings || typeof nextData.exportSettings !== 'object') {
+      nextData.exportSettings = {}
+    }
+
+    if (typeof nextData.exportSettings.pdfFileName !== 'string') {
+      nextData.exportSettings.pdfFileName = ''
+    }
+
+    return nextData
+  }
+
+  const sanitizePdfFileName = (value) => (
+    (value || '')
+      .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '')
+      .replace(/\.pdf$/i, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  )
+
+  const getPdfFileName = (resumeData) => {
+    const customName = sanitizePdfFileName(resumeData?.exportSettings?.pdfFileName)
+    if (customName) {
+      return customName
+    }
+
+    const fallbackName = sanitizePdfFileName(
+      resumeData?.personalInfo?.name
+        ? `${resumeData.personalInfo.name}-简历`
+        : 'resume'
+    )
+
+    return fallbackName || 'resume'
+  }
+
+  const [data, setData] = useState(() => normalizeResumeData(resumeData))
   const resumePrintRef = useRef(null)
 
   // 客户端挂载后从 localStorage 恢复数据
@@ -25,7 +66,7 @@ export function ResumeContent() {
     try {
       const cached = localStorage.getItem(STORAGE_KEY)
       if (cached) {
-        const parsed = JSON.parse(cached)
+        const parsed = normalizeResumeData(JSON.parse(cached))
         // 恢复单独缓存的头像（base64 数据较大，单独存储）
         const cachedAvatar = localStorage.getItem(AVATAR_CACHE_KEY)
         if (cachedAvatar && parsed.personalInfo) {
@@ -39,10 +80,11 @@ export function ResumeContent() {
   }, [])
 
   const handleDataChange = useCallback((newData) => {
-    setData(newData)
+    const normalizedData = normalizeResumeData(newData)
+    setData(normalizedData)
     try {
       // 如果头像是 base64 数据，单独存储，避免 resume data JSON 过大
-      const dataToSave = JSON.parse(JSON.stringify(newData))
+      const dataToSave = JSON.parse(JSON.stringify(normalizedData))
       if (dataToSave.personalInfo?.avatar?.startsWith('data:')) {
         localStorage.setItem(AVATAR_CACHE_KEY, dataToSave.personalInfo.avatar)
         dataToSave.personalInfo.avatar = '__LOCAL_AVATAR__'
@@ -58,7 +100,7 @@ export function ResumeContent() {
   const handleReset = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY)
     localStorage.removeItem(AVATAR_CACHE_KEY)
-    setData(resumeData)
+    setData(normalizeResumeData(resumeData))
   }, [])
 
   const getPrintableStyles = useCallback(() => {
@@ -99,9 +141,7 @@ export function ResumeContent() {
     }
 
     const clonedResume = resumeElement.cloneNode(true)
-    const documentTitle = data.personalInfo.name
-      ? `${data.personalInfo.name} - 简历`
-      : 'resume'
+    const documentTitle = getPdfFileName(data)
 
     frameWindow.document.open()
     frameWindow.document.write(`<!DOCTYPE html>
@@ -197,7 +237,7 @@ export function ResumeContent() {
     } catch {
       printFrame.remove()
     }
-  }, [data.personalInfo.name, getPrintableStyles])
+  }, [data, getPrintableStyles])
   
   return (
     <ResizableLayout

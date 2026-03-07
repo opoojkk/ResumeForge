@@ -10,6 +10,47 @@ type ViewMode = 'focused' | 'all'
 
 const AVATAR_CACHE_KEY = 'resume-forge-avatar'
 
+const normalizeResumeData = (jsonData: any) => {
+  const nextData = JSON.parse(JSON.stringify(jsonData ?? {}))
+
+  if (!nextData.personalInfo) {
+    nextData.personalInfo = {}
+  }
+
+  if (!nextData.exportSettings || typeof nextData.exportSettings !== 'object') {
+    nextData.exportSettings = {}
+  }
+
+  if (typeof nextData.exportSettings.pdfFileName !== 'string') {
+    nextData.exportSettings.pdfFileName = ''
+  }
+
+  return nextData
+}
+
+const sanitizeFileName = (value: string) => (
+  (value || '')
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '')
+    .replace(/\.(pdf|json)$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+)
+
+const getExportFilePrefix = (resumeData: any) => {
+  const customPrefix = sanitizeFileName(resumeData?.exportSettings?.pdfFileName || '')
+  if (customPrefix) {
+    return customPrefix
+  }
+
+  const fallbackPrefix = sanitizeFileName(
+    resumeData?.personalInfo?.name
+      ? `${resumeData.personalInfo.name}-简历`
+      : 'resume'
+  )
+
+  return fallbackPrefix || 'resume'
+}
+
 const CloseIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -66,7 +107,7 @@ const compressImage = (file: File, maxSize = 400): Promise<string> => {
 
 const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, onReset }) => {
   const [activeSection, setActiveSection] = useState<string>('personalInfo')
-  const [data, setData] = useState(initialData)
+  const [data, setData] = useState(() => normalizeResumeData(initialData))
   const [actionMessage, setActionMessage] = useState('')
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
   const [viewMode, setViewMode] = useState<ViewMode>('focused')
@@ -81,7 +122,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
 
   // 当父组件传入的 initialData 变化时（如重置），同步内部 state
   useEffect(() => {
-    setData(initialData)
+    setData(normalizeResumeData(initialData))
   }, [initialData])
 
   useEffect(() => {
@@ -219,6 +260,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
         try {
           let jsonData = JSON.parse(e.target?.result as string)
           jsonData = migrateContactsData(jsonData)
+          jsonData = normalizeResumeData(jsonData)
           setData(jsonData)
           onDataChange(jsonData)
           setActionMessage('已导入 JSON 数据')
@@ -236,7 +278,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
     const url = URL.createObjectURL(dataBlob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'resume-data.json'
+    link.download = `${getExportFilePrefix(data)}-resume-json.json`
     link.click()
     URL.revokeObjectURL(url)
     setActionMessage('已导出 JSON 文件')
@@ -471,6 +513,15 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
           type="text"
           value={data.personalInfo.title}
           onChange={(e) => updateData(['personalInfo', 'title'], e.target.value)}
+        />
+      </div>
+      <div className="form-group">
+        <label>PDF 文件名</label>
+        <input
+          type="text"
+          placeholder="留空时默认使用“姓名-简历”"
+          value={data.exportSettings?.pdfFileName || ''}
+          onChange={(e) => updateData(['exportSettings', 'pdfFileName'], e.target.value)}
         />
       </div>
       <div className="form-group">

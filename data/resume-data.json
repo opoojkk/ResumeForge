@@ -17,6 +17,9 @@
       }
     }
   },
+  "exportSettings": {
+    "pdfFileName": ""
+  },
   "workExperience": [
     {
       "company": "XX科技有限公司",
