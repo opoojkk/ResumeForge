@@ -74,40 +74,76 @@ body {
   flex-direction: column;
 }
 
-/* 拖柄 - 参照 magic-resume 的细条可拖拽分隔条 */
+/* 拖柄 - 提供更明确的可拖拽视觉提示 */
 .resize-handle {
-  width: 6px;
+  width: 12px;
   flex-shrink: 0;
-  background: #e1e4e8;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0.16) 0%, rgba(148, 163, 184, 0.06) 100%);
   cursor: col-resize;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
 }
+
 .resize-handle:hover,
 .resize-handle[data-resize-handle-active] {
-  background: #0969da;
+  background: linear-gradient(180deg, rgba(9, 105, 218, 0.22) 0%, rgba(9, 105, 218, 0.1) 100%);
+  box-shadow: inset 0 0 0 1px rgba(9, 105, 218, 0.22);
 }
+
 .resize-handle:hover {
-  width: 8px;
+  width: 14px;
   margin: 0 -1px;
 }
+
 .resize-handle::after {
   content: '';
   position: absolute;
-  top: 50%;
+  top: 16px;
+  bottom: 16px;
   left: 50%;
-  transform: translate(-50%, -50%);
-  width: 2px;
-  height: 40px;
-  border-radius: 1px;
-  background: rgba(0, 0, 0, 0.15);
+  width: 1px;
+  transform: translateX(-50%);
+  background: rgba(148, 163, 184, 0.55);
   pointer-events: none;
 }
+
 .resize-handle:hover::after,
 .resize-handle[data-resize-handle-active]::after {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(9, 105, 218, 0.4);
 }
-.resize-handle {
+
+.resize-handle__grip {
   position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.12);
+  pointer-events: none;
+}
+
+.resize-handle__grip span {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #64748b;
+}
+
+.resize-handle:hover .resize-handle__grip,
+.resize-handle[data-resize-handle-active] .resize-handle__grip {
+  background: #0969da;
+  box-shadow: 0 6px 18px rgba(9, 105, 218, 0.24);
+}
+
+.resize-handle:hover .resize-handle__grip span,
+.resize-handle[data-resize-handle-active] .resize-handle__grip span {
+  background: #ffffff;
 }
 
 /* 左侧编辑器 - 50% */
@@ -1545,16 +1581,21 @@ a.contact-text:hover {
   gap: 10px;
 }
 
-.array-item input {
+.array-item input,
+.array-item textarea {
   padding: 9px 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 13px;
   transition: all 0.15s ease;
   background: #fafbfc;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
 }
 
-.array-item input:focus {
+.array-item input:focus,
+.array-item textarea:focus {
   border-color: #0969da;
   box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.12);
   outline: none;
@@ -1723,6 +1764,20 @@ a.contact-text:hover {
 .btn-remove-small {
   padding: 5px 10px;
   font-size: 11px;
+}
+
+.responsibility-item .btn-remove-small {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.responsibility-item .btn-remove-small svg {
+  display: block;
 }
 
 /* (Print styles for editor are merged into the main @media print block above) */

@@ -30,7 +30,13 @@ export default function ResizableLayout({ editor, preview }: ResizableLayoutProp
           {editor}
         </div>
       </Panel>
-      <PanelResizeHandle className="resize-handle" />
+      <PanelResizeHandle className="resize-handle" aria-label="调整编辑区与预览区宽度">
+        <div className="resize-handle__grip" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+      </PanelResizeHandle>
       <Panel defaultSize={50} minSize={25} maxSize={75} className="resume-panel-preview">
         <div className="workbench-pane workbench-pane-preview">
           {preview}
