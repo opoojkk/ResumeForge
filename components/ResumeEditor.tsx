@@ -4,6 +4,9 @@ interface ResumeEditorProps {
   initialData: any
   onDataChange: (data: any) => void
   onReset?: () => void
+  onSelectJsonFile?: () => void
+  selectedJsonFileName?: string
+  jsonSyncStatus?: 'idle' | 'syncing' | 'synced' | 'error'
 }
 
 type ViewMode = 'focused' | 'all'
@@ -69,6 +72,124 @@ const CloseIcon = () => (
   </svg>
 )
 
+const FileTextIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+    <path d="M14 2v6h6"></path>
+    <path d="M16 13H8"></path>
+    <path d="M16 17H8"></path>
+    <path d="M10 9H8"></path>
+  </svg>
+)
+
+const UploadIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 3v12"></path>
+    <path d="m7 8 5-5 5 5"></path>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+  </svg>
+)
+
+const DownloadIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 21V9"></path>
+    <path d="m7 16 5 5 5-5"></path>
+    <path d="M21 5v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"></path>
+  </svg>
+)
+
+const RefreshIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 2v6h6"></path>
+    <path d="M21 12A9 9 0 0 0 6 5.3L3 8"></path>
+    <path d="M21 22v-6h-6"></path>
+    <path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"></path>
+  </svg>
+)
+
+const PlusIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 5v14"></path>
+    <path d="M5 12h14"></path>
+  </svg>
+)
+
+const TrashIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 6h18"></path>
+    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+    <path d="M10 11v6"></path>
+    <path d="M14 11v6"></path>
+  </svg>
+)
+
 // 压缩图片并转为 base64
 const compressImage = (file: File, maxSize = 400): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -105,7 +226,14 @@ const compressImage = (file: File, maxSize = 400): Promise<string> => {
   })
 }
 
-const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, onReset }) => {
+const ResumeEditor: React.FC<ResumeEditorProps> = ({
+  initialData,
+  onDataChange,
+  onReset,
+  onSelectJsonFile,
+  selectedJsonFileName,
+  jsonSyncStatus = 'idle',
+}) => {
   const [activeSection, setActiveSection] = useState<string>('personalInfo')
   const [data, setData] = useState(() => normalizeResumeData(initialData))
   const [actionMessage, setActionMessage] = useState('')
@@ -336,6 +464,12 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
     { label: '教育经历', value: data.education.length },
     { label: '文章', value: data.articles.length },
   ]
+  const jsonSyncTextMap = {
+    idle: '待同步',
+    syncing: '同步中',
+    synced: '已同步',
+    error: '同步失败',
+  } as const
 
   const toggleSectionCollapsed = (sectionId: string) => {
     setCollapsedSections((prev) => ({
@@ -545,7 +679,10 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
               className="btn-avatar-upload"
               onClick={() => avatarInputRef.current?.click()}
             >
-              📷 上传头像
+              <span className="editor-action-icon">
+                <UploadIcon />
+              </span>
+              上传头像
             </button>
             {data.personalInfo.avatar && (
               <button
@@ -553,6 +690,9 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
                 className="btn-avatar-clear"
                 onClick={handleClearAvatar}
               >
+                <span className="editor-action-icon">
+                  <TrashIcon />
+                </span>
                 清除
               </button>
             )}
@@ -648,9 +788,13 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
           <div className="nested-item-header">
             <h4>工作经历 #{workIndex + 1}</h4>
             <button
+              type="button"
               className="btn-remove"
               onClick={() => removeArrayItem(['workExperience'], workIndex)}
             >
+              <span className="editor-action-icon">
+                <TrashIcon />
+              </span>
               删除
             </button>
           </div>
@@ -701,9 +845,13 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
                 <div className="sub-nested-item-header">
                   <h5>项目 #{projectIndex + 1}</h5>
                   <button
+                    type="button"
                     className="btn-remove-small"
                     onClick={() => removeArrayItem(['workExperience', workIndex, 'projects'], projectIndex)}
                   >
+                    <span className="editor-action-icon">
+                      <TrashIcon />
+                    </span>
                     删除
                   </button>
                 </div>
@@ -738,15 +886,20 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
                     </div>
                   ))}
                   <button
+                    type="button"
                     className="btn-add-small"
                     onClick={() => addArrayItem(['workExperience', workIndex, 'projects', projectIndex, 'responsibilities'], '')}
                   >
-                    + 添加职责
+                    <span className="editor-action-icon">
+                      <PlusIcon />
+                    </span>
+                    添加职责
                   </button>
                 </div>
               </div>
             ))}
             <button
+              type="button"
               className="btn-add"
               onClick={() => addArrayItem(['workExperience', workIndex, 'projects'], {
                 name: '',
@@ -754,12 +907,16 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
                 responsibilities: []
               })}
             >
-              + 添加项目
+              <span className="editor-action-icon">
+                <PlusIcon />
+              </span>
+              添加项目
             </button>
           </div>
         </div>
       ))}
       <button
+        type="button"
         className="btn-add"
         onClick={() => addArrayItem(['workExperience'], {
           company: '',
@@ -770,7 +927,10 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
           projects: []
         })}
       >
-        + 添加工作经历
+        <span className="editor-action-icon">
+          <PlusIcon />
+        </span>
+        添加工作经历
       </button>
       </>
     )
@@ -786,23 +946,34 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
           <label>技能列表</label>
         {data.skills.map((skill: string, index: number) => (
           <div key={index} className="array-item">
+            <div className="array-item-header">
+              <h5>技能 #{index + 1}</h5>
+              <button
+                type="button"
+                className="btn-remove-small"
+                onClick={() => removeArrayItem(['skills'], index)}
+              >
+                <span className="editor-action-icon">
+                  <TrashIcon />
+                </span>
+                删除
+              </button>
+            </div>
             <textarea
               value={skill}
               onChange={(e) => updateData(['skills', index], e.target.value)}
             />
-            <button
-              className="btn-remove"
-              onClick={() => removeArrayItem(['skills'], index)}
-            >
-              删除
-            </button>
           </div>
         ))}
         <button
+          type="button"
           className="btn-add"
           onClick={() => addArrayItem(['skills'], '')}
         >
-          + 添加技能
+          <span className="editor-action-icon">
+            <PlusIcon />
+          </span>
+          添加技能
         </button>
         </div>
       </>
@@ -820,9 +991,13 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
           <div className="nested-item-header">
             <h4>教育经历 #{index + 1}</h4>
             <button
+              type="button"
               className="btn-remove"
               onClick={() => removeArrayItem(['education'], index)}
             >
+              <span className="editor-action-icon">
+                <TrashIcon />
+              </span>
               删除
             </button>
           </div>
@@ -869,6 +1044,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
         </div>
       ))}
       <button
+        type="button"
         className="btn-add"
         onClick={() => addArrayItem(['education'], {
           degree: '',
@@ -878,7 +1054,10 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
           endDate: ''
         })}
       >
-        + 添加教育经历
+        <span className="editor-action-icon">
+          <PlusIcon />
+        </span>
+        添加教育经历
       </button>
       </>
     )
@@ -895,9 +1074,13 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
           <div className="nested-item-header">
             <h4>项目 #{index + 1}</h4>
             <button
+              type="button"
               className="btn-remove"
               onClick={() => removeArrayItem(['openSourceProjects'], index)}
             >
+              <span className="editor-action-icon">
+                <TrashIcon />
+              </span>
               删除
             </button>
           </div>
@@ -927,6 +1110,7 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
         </div>
       ))}
       <button
+        type="button"
         className="btn-add"
         onClick={() => addArrayItem(['openSourceProjects'], {
           name: '',
@@ -934,7 +1118,10 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
           link: ''
         })}
       >
-        + 添加开源项目
+        <span className="editor-action-icon">
+          <PlusIcon />
+        </span>
+        添加开源项目
       </button>
       </>
     )
@@ -951,9 +1138,13 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
           <div className="nested-item-header">
             <h4>文章 #{index + 1}</h4>
             <button
+              type="button"
               className="btn-remove"
               onClick={() => removeArrayItem(['articles'], index)}
             >
+              <span className="editor-action-icon">
+                <TrashIcon />
+              </span>
               删除
             </button>
           </div>
@@ -976,13 +1167,17 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
         </div>
       ))}
       <button
+        type="button"
         className="btn-add"
         onClick={() => addArrayItem(['articles'], {
           title: '',
           link: ''
         })}
       >
-        + 添加文章
+        <span className="editor-action-icon">
+          <PlusIcon />
+        </span>
+        添加文章
       </button>
       </>
     )
@@ -1019,6 +1214,16 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
             <div className="editor-status">
               <span className="editor-status-pill">实时预览</span>
               <span className="editor-status-pill muted">本地保存</span>
+              {selectedJsonFileName && (
+                <>
+                  <span className="editor-status-pill file-linked" title={selectedJsonFileName}>
+                    JSON: {selectedJsonFileName}
+                  </span>
+                  <span className={`editor-status-pill sync-status ${jsonSyncStatus}`}>
+                    {jsonSyncTextMap[jsonSyncStatus]}
+                  </span>
+                </>
+              )}
             </div>
           </div>
           <div className="editor-actions">
@@ -1030,20 +1235,39 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
               style={{ display: 'none' }}
             />
             <button
-              className="btn-import"
-              onClick={() => fileInputRef.current?.click()}
+              type="button"
+              className="editor-action-button"
+              onClick={onSelectJsonFile}
             >
-              📥 导入
+              <span className="editor-action-icon">
+                <FileTextIcon />
+              </span>
+              选择文件
             </button>
             <button
-              className="btn-export"
+              type="button"
+              className="editor-action-button"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <span className="editor-action-icon">
+                <UploadIcon />
+              </span>
+              导入
+            </button>
+            <button
+              type="button"
+              className="editor-action-button"
               onClick={handleExportJson}
             >
-              📤 导出
+              <span className="editor-action-icon">
+                <DownloadIcon />
+              </span>
+              导出
             </button>
             {onReset && (
               <button
-                className="btn-reset"
+                type="button"
+                className="editor-action-button danger"
                 onClick={() => {
                   if (window.confirm('确定要重置为默认数据吗？所有未导出的编辑将丢失。')) {
                     onReset()
@@ -1051,7 +1275,10 @@ const ResumeEditor: React.FC<ResumeEditorProps> = ({ initialData, onDataChange, 
                   }
                 }}
               >
-                🔄 重置
+                <span className="editor-action-icon">
+                  <RefreshIcon />
+                </span>
+                重置
               </button>
             )}
           </div>

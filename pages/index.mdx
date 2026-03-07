@@ -17,6 +17,7 @@ export const meta = {
 export function ResumeContent() {
   const STORAGE_KEY = 'resume-forge-data'
   const AVATAR_CACHE_KEY = 'resume-forge-avatar'
+  const JSON_SYNC_DELAY = 500
   const normalizeResumeData = (jsonData) => {
     const nextData = JSON.parse(JSON.stringify(jsonData ?? {}))
 
@@ -33,6 +34,60 @@ export function ResumeContent() {
     }
 
     return nextData
+  }
+
+  const migrateContactsData = (jsonData) => {
+    if (Array.isArray(jsonData.personalInfo?.contacts)) {
+      const contactsArray = jsonData.personalInfo.contacts
+      const contactsObj = {
+        email: '',
+        phone: '',
+        github: { title: '', link: '' },
+        blog: { title: '', link: '' },
+      }
+
+      contactsArray.forEach((contact) => {
+        if (contact.type === 'email') {
+          contactsObj.email = contact.text
+        } else if (contact.type === 'phone') {
+          contactsObj.phone = contact.text
+        } else if (contact.type === 'github') {
+          contactsObj.github = {
+            title: contact.title || '',
+            link: contact.link || `https://github.com/${contact.text}`,
+          }
+        } else if (contact.type === 'website') {
+          contactsObj.blog = {
+            title: contact.title || '',
+            link: contact.link || contact.text,
+          }
+        }
+      })
+
+      jsonData.personalInfo.contacts = contactsObj
+    } else if (jsonData.personalInfo?.contacts) {
+      const contacts = jsonData.personalInfo.contacts
+
+      if (typeof contacts.github === 'string') {
+        contacts.github = {
+          title: '',
+          link: contacts.github,
+        }
+      } else if (!contacts.github) {
+        contacts.github = { title: '', link: '' }
+      }
+
+      if (typeof contacts.blog === 'string') {
+        contacts.blog = {
+          title: '',
+          link: contacts.blog,
+        }
+      } else if (!contacts.blog) {
+        contacts.blog = { title: '', link: '' }
+      }
+    }
+
+    return jsonData
   }
 
   const sanitizePdfFileName = (value) => (
@@ -59,7 +114,69 @@ export function ResumeContent() {
   }
 
   const [data, setData] = useState(() => normalizeResumeData(resumeData))
+  const [selectedJsonFileName, setSelectedJsonFileName] = useState('')
+  const [jsonSyncStatus, setJsonSyncStatus] = useState('idle')
   const resumePrintRef = useRef(null)
+  const jsonFileHandleRef = useRef(null)
+  const jsonSyncTimeoutRef = useRef(null)
+
+  const persistToLocalCache = useCallback((normalizedData) => {
+    try {
+      const dataToSave = JSON.parse(JSON.stringify(normalizedData))
+      if (dataToSave.personalInfo?.avatar?.startsWith('data:')) {
+        localStorage.setItem(AVATAR_CACHE_KEY, dataToSave.personalInfo.avatar)
+        dataToSave.personalInfo.avatar = '__LOCAL_AVATAR__'
+      } else {
+        localStorage.removeItem(AVATAR_CACHE_KEY)
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave))
+    } catch (e) {
+      // ignore
+    }
+  }, [])
+
+  const syncJsonFile = useCallback(async (nextData) => {
+    const handle = jsonFileHandleRef.current
+    if (!handle) return
+
+    setJsonSyncStatus('syncing')
+
+    try {
+      if (typeof handle.requestPermission === 'function') {
+        const permission = await handle.requestPermission({ mode: 'readwrite' })
+        if (permission !== 'granted') {
+          throw new Error('write permission denied')
+        }
+      }
+
+      const writable = await handle.createWritable()
+      await writable.write(JSON.stringify(nextData, null, 2))
+      await writable.close()
+      setJsonSyncStatus('synced')
+    } catch (error) {
+      setJsonSyncStatus('error')
+    }
+  }, [])
+
+  const scheduleJsonFileSync = useCallback((nextData, immediate = false) => {
+    if (!jsonFileHandleRef.current) return
+
+    if (jsonSyncTimeoutRef.current) {
+      window.clearTimeout(jsonSyncTimeoutRef.current)
+      jsonSyncTimeoutRef.current = null
+    }
+
+    if (immediate) {
+      void syncJsonFile(nextData)
+      return
+    }
+
+    setJsonSyncStatus('syncing')
+    jsonSyncTimeoutRef.current = window.setTimeout(() => {
+      jsonSyncTimeoutRef.current = null
+      void syncJsonFile(nextData)
+    }, JSON_SYNC_DELAY)
+  }, [syncJsonFile])
 
   // 客户端挂载后从 localStorage 恢复数据
   useEffect(() => {
@@ -79,29 +196,77 @@ export function ResumeContent() {
     }
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (jsonSyncTimeoutRef.current) {
+        window.clearTimeout(jsonSyncTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const handleDataChange = useCallback((newData) => {
     const normalizedData = normalizeResumeData(newData)
     setData(normalizedData)
-    try {
-      // 如果头像是 base64 数据，单独存储，避免 resume data JSON 过大
-      const dataToSave = JSON.parse(JSON.stringify(normalizedData))
-      if (dataToSave.personalInfo?.avatar?.startsWith('data:')) {
-        localStorage.setItem(AVATAR_CACHE_KEY, dataToSave.personalInfo.avatar)
-        dataToSave.personalInfo.avatar = '__LOCAL_AVATAR__'
-      } else {
-        localStorage.removeItem(AVATAR_CACHE_KEY)
-      }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave))
-    } catch (e) {
-      // ignore
-    }
-  }, [])
+    persistToLocalCache(normalizedData)
+    scheduleJsonFileSync(normalizedData)
+  }, [persistToLocalCache, scheduleJsonFileSync])
 
   const handleReset = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY)
     localStorage.removeItem(AVATAR_CACHE_KEY)
-    setData(normalizeResumeData(resumeData))
-  }, [])
+    const defaultData = normalizeResumeData(resumeData)
+    setData(defaultData)
+    scheduleJsonFileSync(defaultData, true)
+  }, [scheduleJsonFileSync])
+
+  const handleSelectJsonFile = useCallback(async () => {
+    if (typeof window === 'undefined' || typeof window.showOpenFilePicker !== 'function') {
+      alert('当前浏览器不支持直接选择并同步本地 JSON 文件，请使用基于 Chromium 的浏览器。')
+      return
+    }
+
+    try {
+      const [fileHandle] = await window.showOpenFilePicker({
+        multiple: false,
+        excludeAcceptAllOption: true,
+        types: [
+          {
+            description: 'JSON 文件',
+            accept: {
+              'application/json': ['.json'],
+            },
+          },
+        ],
+      })
+
+      if (!fileHandle) return
+
+      if (typeof fileHandle.requestPermission === 'function') {
+        const permission = await fileHandle.requestPermission({ mode: 'readwrite' })
+        if (permission !== 'granted') {
+          alert('需要授予该文件的读写权限后，才能启用自动同步。')
+          return
+        }
+      }
+
+      const file = await fileHandle.getFile()
+      const text = await file.text()
+      const parsed = normalizeResumeData(migrateContactsData(JSON.parse(text)))
+
+      jsonFileHandleRef.current = fileHandle
+      setSelectedJsonFileName(file.name)
+      setJsonSyncStatus('synced')
+      setData(parsed)
+      persistToLocalCache(parsed)
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        return
+      }
+
+      setJsonSyncStatus('error')
+      alert('读取 JSON 文件失败，请确认文件格式正确。')
+    }
+  }, [persistToLocalCache])
 
   const getPrintableStyles = useCallback(() => {
     return Array.from(document.styleSheets)
@@ -241,7 +406,16 @@ export function ResumeContent() {
   
   return (
     <ResizableLayout
-      editor={<ResumeEditor initialData={data} onDataChange={handleDataChange} onReset={handleReset} />}
+      editor={
+        <ResumeEditor
+          initialData={data}
+          onDataChange={handleDataChange}
+          onReset={handleReset}
+          onSelectJsonFile={handleSelectJsonFile}
+          selectedJsonFileName={selectedJsonFileName}
+          jsonSyncStatus={jsonSyncStatus}
+        />
+      }
       preview={
         <div className="preview-panel">
           <div className="preview-toolbar">

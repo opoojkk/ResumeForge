@@ -1031,11 +1031,91 @@ a.contact-text:hover {
   border-color: rgba(148, 163, 184, 0.2);
 }
 
+.editor-status-pill.file-linked {
+  max-width: 220px;
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(203, 213, 225, 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-status-pill.sync-status.syncing {
+  color: #1d4ed8;
+  background: rgba(239, 246, 255, 0.92);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.editor-status-pill.sync-status.synced {
+  color: #047857;
+  background: rgba(236, 253, 245, 0.95);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.editor-status-pill.sync-status.error {
+  color: #b91c1c;
+  background: rgba(254, 242, 242, 0.95);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
 .editor-actions {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.editor-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.editor-action-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(96, 165, 250, 0.55);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.1);
+  color: #0f172a;
+}
+
+.editor-action-button:active {
+  transform: translateY(0);
+}
+
+.editor-action-button.danger {
+  color: #b91c1c;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.editor-action-button.danger:hover {
+  border-color: rgba(248, 113, 113, 0.55);
+  box-shadow: 0 14px 28px rgba(185, 28, 28, 0.12);
+}
+
+.editor-action-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.editor-action-icon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .editor-workbench-strip {
@@ -1179,33 +1259,6 @@ a.contact-text:hover {
   border-radius: 999px;
   background: #2563eb;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
-}
-
-.btn-import,
-.btn-export,
-.btn-reset {
-  padding: 8px 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: white;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.15s ease;
-  color: #57606a;
-}
-
-.btn-import:hover,
-.btn-export:hover {
-  background: #f6f8fa;
-  border-color: #57606a;
-  color: #24292e;
-}
-
-.btn-reset:hover {
-  background: #fff1f0;
-  border-color: #cf222e;
-  color: #cf222e;
 }
 
 /* Tab 导航栏 - 简化设计 */
@@ -1415,15 +1468,15 @@ a.contact-text:hover {
 .editor-section-content {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   max-width: 800px;
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .form-group label {
@@ -1467,10 +1520,10 @@ a.contact-text:hover {
 .avatar-upload-area {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px;
+  gap: 14px;
+  padding: 16px;
   background: #f6f8fa;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid #e1e4e8;
 }
 
@@ -1497,45 +1550,47 @@ a.contact-text:hover {
   flex-wrap: wrap;
 }
 
-.btn-avatar-upload {
-  padding: 8px 16px;
-  background: #0969da;
-  color: white;
-  border: none;
-  border-radius: 6px;
+.btn-avatar-upload,
+.btn-avatar-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 500;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.btn-avatar-upload {
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.96) 0%, rgba(255, 255, 255, 0.94) 100%);
+  color: #1d4ed8;
 }
 
 .btn-avatar-upload:hover {
-  background: #0550ae;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+  border-color: rgba(96, 165, 250, 0.55);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.12);
+  color: #1e40af;
 }
 
 .btn-avatar-upload:active {
-  transform: scale(0.98);
+  transform: translateY(0);
 }
 
 .btn-avatar-clear {
-  padding: 8px 12px;
-  background: transparent;
-  color: #d1242f;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.15s ease;
+  border: 1px solid rgba(239, 68, 68, 0.16);
+  background: linear-gradient(180deg, rgba(254, 242, 242, 0.96) 0%, rgba(255, 255, 255, 0.94) 100%);
+  color: #b91c1c;
 }
 
 .btn-avatar-clear:hover {
-  background: #fff1f0;
-  border-color: #d1242f;
+  transform: translateY(-1px);
+  border-color: rgba(248, 113, 113, 0.55);
+  box-shadow: 0 14px 28px rgba(185, 28, 28, 0.12);
 }
 
 .avatar-hint {
@@ -1548,10 +1603,10 @@ a.contact-text:hover {
 .contact-fields {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px;
+  gap: 14px;
+  padding: 16px;
   background: #f6f8fa;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid #e1e4e8;
 }
 
@@ -1561,10 +1616,11 @@ a.contact-text:hover {
 
 .array-item {
   display: flex;
-  gap: 12px;
-  padding: 16px;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
   background: #ffffff;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid #d1d5db;
   transition: all 0.15s ease;
 }
@@ -1579,6 +1635,22 @@ a.contact-text:hover {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.array-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.array-item-header h5 {
+  margin: 0;
+  font-size: 14px;
+  color: #57606a;
+  font-weight: 600;
 }
 
 .array-item input,
@@ -1606,10 +1678,10 @@ a.contact-text:hover {
   background: #ffffff;
   border: 1px solid rgba(203, 213, 225, 0.9);
   border-radius: 16px;
-  padding: 20px;
+  padding: 22px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
@@ -1623,7 +1695,7 @@ a.contact-text:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 12px;
+  padding-bottom: 14px;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -1638,10 +1710,10 @@ a.contact-text:hover {
   background: linear-gradient(180deg, #f8fbff 0%, #f3f7fb 100%);
   border: 1px solid rgba(203, 213, 225, 0.8);
   border-radius: 14px;
-  padding: 16px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .sub-nested-item-header {
@@ -1675,17 +1747,23 @@ a.contact-text:hover {
   outline: none;
 }
 
+.responsibilities {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .responsibilities label {
   font-size: 13px;
   font-weight: 600;
   color: #57606a;
-  margin-top: 8px;
+  margin-top: 2px;
 }
 
 .responsibility-item {
   display: flex;
-  gap: 10px;
-  align-items: flex-start;
+  gap: 12px;
+  align-items: stretch;
 }
 
 .responsibility-item textarea {
@@ -1708,62 +1786,79 @@ a.contact-text:hover {
 
 /* 按钮 - 简洁专业 */
 .btn-add,
-.btn-add-small {
-  padding: 9px 16px;
-  background: #0969da;
-  color: white;
-  border: none;
-  border-radius: 6px;
+.btn-add-small,
+.btn-remove,
+.btn-remove-small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.15s ease;
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.btn-add,
+.btn-add-small {
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.96) 0%, rgba(255, 255, 255, 0.94) 100%);
+  color: #1d4ed8;
   align-self: flex-start;
+}
+
+.btn-add {
+  padding: 10px 16px;
+  font-size: 13px;
+}
+
+.btn-add-small {
+  padding: 8px 12px;
+  font-size: 12px;
 }
 
 .btn-add:hover,
 .btn-add-small:hover {
-  background: #0550ae;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+  border-color: rgba(96, 165, 250, 0.55);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.12);
+  color: #1e40af;
 }
 
 .btn-add:active,
 .btn-add-small:active {
-  transform: scale(0.98);
-}
-
-.btn-add-small {
-  padding: 7px 12px;
-  font-size: 12px;
+  transform: translateY(0);
 }
 
 .btn-remove,
 .btn-remove-small {
-  padding: 7px 12px;
-  background: #d1242f;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.15s ease;
+  border: 1px solid rgba(239, 68, 68, 0.16);
+  background: linear-gradient(180deg, rgba(254, 242, 242, 0.96) 0%, rgba(255, 255, 255, 0.94) 100%);
+  color: #b91c1c;
   flex-shrink: 0;
+}
+
+.btn-remove {
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+.btn-remove-small {
+  padding: 6px 11px;
+  font-size: 11px;
 }
 
 .btn-remove:hover,
 .btn-remove-small:hover {
-  background: #a40e26;
+  transform: translateY(-1px);
+  border-color: rgba(248, 113, 113, 0.55);
+  box-shadow: 0 14px 28px rgba(185, 28, 28, 0.12);
 }
 
 .btn-remove:active,
 .btn-remove-small:active {
-  transform: scale(0.98);
-}
-
-.btn-remove-small {
-  padding: 5px 10px;
-  font-size: 11px;
+  transform: translateY(0);
 }
 
 .responsibility-item .btn-remove-small {
@@ -1773,7 +1868,7 @@ a.contact-text:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .responsibility-item .btn-remove-small svg {
